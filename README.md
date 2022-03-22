@@ -72,3 +72,9 @@ Invoking function with event file (function_name is same as declared in template
  ```sh
 $ sam local invoke <function_name> -e event.json
 ```
+
+Invoking function with event via stdin
+$ echo '{"message": "Hey, are you there?" }' | sam local invoke --event - "Ratings"
+
+For more options
+$ sam local invoke --help
