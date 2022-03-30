@@ -1,11 +1,20 @@
 {
-  "name": "lambda-functions",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+    "name": "lambda-functions",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "aws-sdk": "^2.1030.0",
+        "jimp": "^0.16.1",
+        "serverless-mysql": "^1.5.4",
+        "sharp": "^0.29.3"
+    },
+    "devDependencies": {
+        "dotenv": "^16.0.0"
+    }
 }
