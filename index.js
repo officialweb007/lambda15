@@ -1,16 +1,16 @@
 const { addCronLog, setPrintOrderStatus, getOrderPhotosByOrderId, getPrintOrdersByStatus, DbConnection } = require("./query")
 require("dotenv").config();
 module.exports.handler = async(event, context) => {
-
+    let db = DbConnection()
     try {
 
-        let db = DbConnection()
+        const printOrdersRows = await getPrintOrdersByStatus(db, 2);
 
-        const printOrdersRows = await getPrintOrdersByStatus(db, 92);
+        for (let index in printOrdersRows) {
 
-        printOrdersRows.forEach(printOrdersRow => {
+            let row = printOrdersRows[index];
 
-            const orderPrints = getOrderPhotosByOrderId(db, printOrdersRow.order_id);
+            const orderPrints = await getOrderPhotosByOrderId(db, row.order_id)
 
             let normal_photos = 0;
             let montage_photos = 0;
@@ -18,7 +18,11 @@ module.exports.handler = async(event, context) => {
             let converted_images = true;
             let has_montage = false;
 
-            orderPrints.forEach(orderPrint => {
+            // console.log(orderPrints);
+
+            for (let index2 in orderPrints) {
+
+                let orderPrint = orderPrints[index2];
 
                 if (orderPrint.status == 0) {
                     converted_images = false;
@@ -31,21 +35,23 @@ module.exports.handler = async(event, context) => {
                     montage_photos += 1;
                 }
 
-            });
+            }
 
             let expected_montage_photos = Math.round(normal_photos / 10);
 
+            //console.log(expected_montage_photos);
+
             if (has_montage && converted_images && (expected_montage_photos == montage_photos)) {
 
-                const printOrderStatus = setPrintOrderStatus(db, 3, printOrdersRow.order_id);
+                const printOrderStatus = setPrintOrderStatus(db, 3, row.order_id);
 
-                let message = 'Order ' + printOrdersRow.order_id + ' is ready for print.';
+                let message = 'Order ' + row.order_id + ' is ready for print.';
 
-                addCronLog(db, message);
+                await addCronLog(db, message);
 
             }
 
-        });
+        }
 
 
     } catch (e) {

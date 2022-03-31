@@ -89,7 +89,7 @@ async function setPrintOrderStatus(db, status, orderId) {
 }
 
 async function addCronLog(db, message) {
-    let query = `INSERT INTO cron_log (message) VALUES (${message})`
+    let query = `INSERT INTO cron_log (message) VALUES ('${message}')`
     let result = db.Query(query);
     return result;
 
