@@ -67,38 +67,78 @@ var DbConnection = function() {
     }
 }
 
-async function getPrintOrdersByStatus(db, status) {
-    let query = `SELECT * FROM print_orders WHERE order_status = ${status} LIMIT 5`
+async function getOrdersfromPo(db, status) {
+    let query = `SELECT * from print_orders where order_status = ${status} ORDER BY RAND() LIMIT 1`
     let result = db.Query(query);
     return result;
 
 }
 
-async function getOrderPhotosByOrderId(db, orderId) {
-    let query = `SELECT * FROM order_photos WHERE order_id = ${orderId}`
+async function getReceWelcomeCardInfo(db, user_id) {
+    let query = `SELECT * FROM wp_usermeta where meta_key = 'received_welcome_card' and user_id = ${user_id}`
     let result = db.Query(query);
     return result;
 
 }
 
-async function setPrintOrderStatus(db, status, orderId) {
-    let query = `UPDATE print_orders set order_status = ${status} where order_id = ${orderId}`
+async function getPostMetaInfo(db, meta_key, wocommerce_id) {
+    let query = `SELECT * from wp_postmeta where meta_key = '${meta_key}' and post_id = ${wocommerce_id}`
     let result = db.Query(query);
     return result;
 
 }
 
-async function addCronLog(db, message) {
-    let query = `INSERT INTO cron_log (message) VALUES ('${message}')`
+async function getPostMeta(db, wocommerce_id) {
+    let query = `SELECT * from wp_postmeta where post_id = ${wocommerce_id}`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function getPostStatus(db, wocommerce_id) {
+    let query = `SELECT post_status from wp_posts where ID = ${wocommerce_id}`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function getOrderPhotos(db, order_id) {
+    let query = `SELECT * from order_photos where order_id = ${order_id}`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function insertRecWelCardRecord(db, user_id, status) {
+    let query = `INSERT INTO wp_usermeta ('user_id', 'meta_key', 'meta_value') VALUES (${user_id}, 'received_welcome_card', ${status})`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function updateStatusAfterLab(db, photo_lab_order_id, order_id, status) {
+    let query = `UPDATE print_orders set order_status = ${status}, photo_lab_order_id = ${photo_lab_order_id} WHERE order_id = ${order_id}`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function updateItemCode(db, item_code, itemCodeVal, wocommerce_id) {
+    let query = `UPDATE wp_postmeta set meta_key = '${item_code}', meta_value = '${itemCodeVal}' WHERE post_id = ${wocommerce_id}`
     let result = db.Query(query);
     return result;
 
 }
 
 module.exports = {
-    getPrintOrdersByStatus,
-    getOrderPhotosByOrderId,
-    setPrintOrderStatus,
-    addCronLog,
+    getOrdersfromPo,
+    getReceWelcomeCardInfo,
+    getPostMetaInfo,
+    getPostMeta,
+    getPostStatus,
+    getOrderPhotos,
+    insertRecWelCardRecord,
+    updateStatusAfterLab,
+    updateItemCode,
     DbConnection
 };
