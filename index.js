@@ -11,6 +11,7 @@ module.exports.handler = async(event, context) => {
         let midi_prints_count = 0;
         let include_welcome = false;
         let gift_note = false;
+        let itemsArray;
 
         // loop
         for (let index in rows) {
@@ -92,7 +93,7 @@ module.exports.handler = async(event, context) => {
                 "0.714": 'CP57M-F'
             };
 
-            console.log(orderPhotosRecords);
+            // console.log(orderPhotosRecords);
 
             for (let index in orderPhotosRecords) {
 
@@ -116,41 +117,42 @@ module.exports.handler = async(event, context) => {
 
                 if (orderPhotosRecord['status'] != 9) {
 
+
                     switch (orderPhotosRecord['selected_crop']) {
 
-                        case '0.563':
+                        case 0.563:
                             prints_338x6.push(orderPhotosRecord);
                             break;
 
-                        case '1.775':
+                        case 1.775:
                             prints_338x6.push(orderPhotosRecord);
                             break;
 
-                        case '1.5':
+                        case 1.5:
                             prints_4x6.push(orderPhotosRecord);
                             break;
 
-                        case '0.666':
+                        case 0.666:
                             prints_4x6.push(orderPhotosRecord);
                             break;
 
-                        case '1.333':
+                        case 1.333:
                             prints_375x5.push(orderPhotosRecord);
                             break;
 
-                        case '0.75':
+                        case 0.75:
                             prints_375x5.push(orderPhotosRecord);
                             break;
 
-                        case '1':
+                        case 1:
                             prints_4x4.push(orderPhotosRecord);
                             break;
 
-                        case '1.4':
+                        case 1.4:
                             prints_5x7.push(orderPhotosRecord);
                             break;
 
-                        case '0.714':
+                        case 0.714:
                             prints_5x7.push(orderPhotosRecord);
                             break;
 
@@ -164,11 +166,20 @@ module.exports.handler = async(event, context) => {
 
                 }
 
+                // console.log(prints_338x6);
+                // console.log(prints_4x6);
+                // console.log(prints_4x4);
+                // console.log(prints_375x5);
+                // console.log(prints_5x7);
+
+
                 let sorted_orders = prints_338x6.concat(prints_4x6, prints_4x4, prints_375x5, prints_5x7, prints_montage);
+
+                // console.log(sorted_orders)
 
                 for (let index in sorted_orders) {
 
-                    const sorted_order = sorted_orders[index];
+                    let sorted_order = sorted_orders[index];
 
                     let cropped = false;
                     let crop_from_center = false;
@@ -177,16 +188,15 @@ module.exports.handler = async(event, context) => {
                     if (sorted_order['status'] == 2) {
                         continue;
                     }
-
+                    // console.log(sorted_order)
                     if (sorted_order['status'] != 9) {
                         let look_for = sorted_order['selected_crop'];
-
+                        
                         if (inc_borders == 'yes') {
-                            look_for = '-b';
+                            look_for += '-b';
                         }
 
                         product_code = product_code_map[look_for];
-
 
                     } else {
                         product_code = 'CP57M-F';
@@ -196,11 +206,11 @@ module.exports.handler = async(event, context) => {
                         }
                     }
 
-                    if ((product_code === "CP57M-16-F" || product_code === "CP57M-F") && orderPhotosRecord['status'] != 9) {
-                        midi_prints_count += orderPhotosRecord['quantity'];
+                    if ((product_code === "CP57M-16-F" || product_code === "CP57M-F") && sorted_order['status'] != 9) {
+                        midi_prints_count += sorted_order['quantity'];
                     }
 
-                    if (orderPhotosRecord['status'] == 9) {
+                    if (sorted_order['status'] == 9) {
 
                         crop_details = [0, 0, 1, 1];
                         orientation = 0;
@@ -211,41 +221,41 @@ module.exports.handler = async(event, context) => {
                         let x2 = 1;
                         let y1 = 0;
                         let y2 = 1;
-                        let ratio = round(orderPhotosRecord['height'] / orderPhotosRecord['width'], 3);
+                        let ratio = Math.round(sorted_order['height'] / sorted_order['width'], 3);
                         orientation = 0;
 
                         if (0.99 < ratio && ratio < 1.01) {
                             ratio = 1;
                         }
 
-                        let new_ratio = orderPhotosRecord['selected_crop'];
+                        let new_ratio = sorted_order['selected_crop'];
 
-                        let proposed_width = orderPhotosRecord['height'] / $new_ratio;
-                        let proposed_height = orderPhotosRecord['height'];
+                        let proposed_width = sorted_order['height'] / new_ratio;
+                        let proposed_height = sorted_order['height'];
 
-                        if (proposed_width > orderPhotosRecord['width']) {
-                            proposed_height = orderPhotosRecord['width'] * new_ratio;
-                            proposed_width = orderPhotosRecord['width'];
+                        if (proposed_width > sorted_order['width']) {
+                            proposed_height = sorted_order['width'] * new_ratio;
+                            proposed_width = sorted_order['width'];
                         }
 
-                        let height_difference = abs(proposed_height - orderPhotosRecord['height']);
-                        let width_difference = abs(proposed_width - orderPhotosRecord['width']);
+                        let height_difference = Math.abs(proposed_height - sorted_order['height']);
+                        let width_difference = Math.abs(proposed_width - sorted_order['width']);
 
                         if (height_difference > width_difference) {
                             // crop vertically
                             x1 = 0;
                             x2 = 1;
 
-                            if (orderPhotosRecord['y_crop'] > 0) {
+                            if (sorted_order['y_crop'] > 0) {
 
-                                y1 = orderPhotosRecord['y_crop'];
-                                y2 = y1 + ((proposed_height / orderPhotosRecord['height']));
+                                y1 = sorted_order['y_crop'];
+                                y2 = y1 + ((proposed_height / sorted_order['height']));
 
                             } else {
 
-                                let fraction_difference_y = height_difference / orderPhotosRecord['height'];
+                                let fraction_difference_y = height_difference / sorted_order['height'];
                                 y1 = fraction_difference_y / 2;
-                                y2 = $y1 + (proposed_height / orderPhotosRecord['height']);
+                                y2 = $y1 + (proposed_height / sorted_order['height']);
 
                             }
 
@@ -254,15 +264,15 @@ module.exports.handler = async(event, context) => {
                             // crop horizontally
                             y1 = 0;
                             y2 = 1;
-                            if (orderPhotosRecord['x_crop'] > 0) {
+                            if (sorted_order['x_crop'] > 0) {
 
-                                x1 = orderPhotosRecord['x_crop'];
-                                x2 = x1 + ((proposed_width / orderPhotosRecord['width']));
+                                x1 = sorted_order['x_crop'];
+                                x2 = x1 + ((proposed_width / sorted_order['width']));
 
                             } else {
-                                let fraction_difference_x = width_difference / orderPhotosRecord['width'];
+                                let fraction_difference_x = width_difference / sorted_order['width'];
                                 x1 = fraction_difference_x / 2;
-                                x2 = x1 + ((proposed_width / orderPhotosRecord['width']));
+                                x2 = x1 + ((proposed_width / sorted_order['width']));
                             }
 
                         }
@@ -271,26 +281,31 @@ module.exports.handler = async(event, context) => {
 
                     }
 
-                    if (orderPhotosRecord['status'] == 1) {
-                        total_prints += orderPhotosRecord['quantity'];
+                    if (sorted_order['status'] == 1) {
+                        total_prints += sorted_order['quantity'];
                     }
 
-                    items = {
+                    itemsArray = {
                         'ItemCode': product_code,
-                        'Quantity': orderPhotosRecord['quantity'],
-                        'IPath': orderPhotosRecord['href'],
+                        'Quantity': sorted_order['quantity'],
+                        'IPath': sorted_order['href'],
                         'Orientation': orientation,
                         'Cropdetails': crop_details
                     };
 
-
                 }
+
+                items.push(itemsArray);
+                
+                // console.log(items)
 
                 //Small Prints count , prints excluding the midi prints
 
                 let small_prints = 0;
                 let glassine;
                 let sleeve;
+                let optionArray;
+                let options = [];
 
                 small_prints = total_prints - midi_prints_count;
 
@@ -347,60 +362,60 @@ module.exports.handler = async(event, context) => {
                 }
 
                 if (total_prints > 0 && total_prints <= 40) {
-                    // console.log('0');
                     mailer = 'MOOTSH-MA';
                 } else if (total_prints > 40 && total_prints <= 80) {
-                    // console.log('1');
                     mailer = 'MOOTSH-MB';
                 } else if (total_prints > 80) {
-                    // console.log('2');
                     mailer = 'MOOTSH-C';
                 }
 
-                let options = {
+                optionArray = {
                     'ItemCode': mailer,
                     'Quantity': 1
                 };
 
-                // console.log(mailer);
+                options.push(optionArray);
 
                 if (sleeve != 0) {
-                    let options = {
+                    optionArray = {
                         'ItemCode': "MOOTSH-S",
                         'Quantity': sleeve
                     };
-
+                    options.push(optionArray);
                     //await updateItemCode(db, options['ItemCode'], sleeve, wocommerce_id);
 
                 }
 
                 if (glassine != 0) {
-                    let options = {
+                    optionArray = {
                         'ItemCode': "MOOTSH-GE",
                         'Quantity': glassine
                     };
+                   options.push(optionArray);
                     //await updateItemCode(db, options['ItemCode'], glassine, wocommerce_id);
                 }
 
                 if (midi != 0) {
-                    let options = {
+                    optionArray = {
                         'ItemCode': "MOOTSH-PW",
                         'Quantity': midi
                     };
+                    options.push(optionArray);
                     //await updateItemCode(db, options['ItemCode'], midi, wocommerce_id);
                 }
 
                 if (!gift_note) {
                     if (include_welcome) {
-                        let options = {
+                        optionArray = {
                             'ItemCode': "MOOTSH-WC",
                             'Quantity': 1
                         };
+                        options.push(optionArray);
                         //await updateItemCode(db, options['ItemCode'], true, wocommerce_id);
                         //await insertRecWelCardRecord(db, user_id, '1')
                     }
                     //await updateItemCode(db, options['ItemCode'], 1, wocommerce_id);
-                }
+                }                
 
                 let po_order_id = 'PO' + wocommerce_id;
 
@@ -452,9 +467,7 @@ module.exports.handler = async(event, context) => {
                 if (shippingAddress1.length > 2 && orderShippingCity.length > 2) {
                     use_billing = false;
                 }
-
-                console.log(orderShippingCountry);
-
+            
                 if(!use_billing && orderShippingCountryLc == 'us' || orderShippingCountryLc == 'usa') {
                     shipping = {
                       "CustomerName" :  shippingFirstName + ' ' + shippingLastName,
@@ -527,8 +540,8 @@ module.exports.handler = async(event, context) => {
                                 },
 
                     };
-                    // console.log(payload);
-                //    console.log(JSON.stringify(payload));
+                    //console.log(items);
+                   console.log(JSON.stringify(payload));
 
 
             }
