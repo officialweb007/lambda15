@@ -1,4 +1,4 @@
-const { DbConnection, getOrdersfromPo, getReceWelcomeCardInfo, getPostMetaInfo, getPostStatus, getOrderPhotos, getPostMeta, updateItemCode, insertRecWelCardRecord } = require("./query")
+const { DbConnection, getOrdersfromPo, getReceWelcomeCardInfo, getPostMetaInfo, getPostStatus, getOrderPhotos, getPostMeta, updateStatusAfterLab, getPostMetabykey, updateItemCode, insertItemCode, insertRecWelCardRecord } = require("./query")
 require("dotenv").config();
 module.exports.handler = async(event, context) => {
     let db = DbConnection();
@@ -167,10 +167,7 @@ module.exports.handler = async(event, context) => {
 
                 }
 
-                sorted_orders = prints_338x6.concat(prints_4x6, prints_4x4, prints_375x5, prints_5x7, prints_montage);                                  
-                
-              
-
+                sorted_orders = prints_338x6.concat(prints_4x6, prints_4x4, prints_375x5, prints_5x7, prints_montage); 
 
             }
 
@@ -375,7 +372,19 @@ module.exports.handler = async(event, context) => {
                     'Quantity': sleeve
                 };
                 options.push(optionArray);
-                //await updateItemCode(db, options['ItemCode'], sleeve, wocommerce_id);
+
+                let checkItemCode = await getPostMetabykey(db, optionArray['ItemCode'], wocommerce_id);
+
+                console.log(checkItemCode.length)
+
+                if(checkItemCode.length == 0){
+                    var abc = await insertItemCode(db, wocommerce_id, optionArray['ItemCode'], sleeve );
+                    console.log(abc);
+                }else{
+                    var cde = await updateItemCode(db, optionArray['ItemCode'], 1, wocommerce_id );
+                    console.log(cde);
+                }
+                
 
             }
 
@@ -385,7 +394,18 @@ module.exports.handler = async(event, context) => {
                     'Quantity': glassine
                 };
                options.push(optionArray);
-                //await updateItemCode(db, options['ItemCode'], glassine, wocommerce_id);
+               
+               let checkItemCode = await getPostMetabykey(db, optionArray['ItemCode'], wocommerce_id);
+
+               console.log(checkItemCode.length)
+
+               if(checkItemCode.length == 0){
+                   var abc = await insertItemCode(db, wocommerce_id, optionArray['ItemCode'], glassine );
+                   console.log(abc);
+               }else{
+                   var cde = await updateItemCode(db, optionArray['ItemCode'], 1, wocommerce_id );
+                   console.log(cde);
+               }
             }
 
             if (midi != 0) {
@@ -394,7 +414,18 @@ module.exports.handler = async(event, context) => {
                     'Quantity': midi
                 };
                 options.push(optionArray);
-                //await updateItemCode(db, options['ItemCode'], midi, wocommerce_id);
+               
+                let checkItemCode = await getPostMetabykey(db, optionArray['ItemCode'], wocommerce_id);
+ 
+                console.log(checkItemCode.length)
+ 
+                if(checkItemCode.length == 0){
+                    var abc = await insertItemCode(db, wocommerce_id, optionArray['ItemCode'], midi );
+                    console.log(abc);
+                }else{
+                    var cde = await updateItemCode(db, optionArray['ItemCode'], 1, wocommerce_id );
+                    console.log(cde);
+                }
             }
 
             if (!gift_note) {
@@ -403,11 +434,23 @@ module.exports.handler = async(event, context) => {
                         'ItemCode': "MOOTSH-WC",
                         'Quantity': 1
                     };
-                    options.push(optionArray);
-                    //await updateItemCode(db, options['ItemCode'], true, wocommerce_id);
-                    //await insertRecWelCardRecord(db, user_id, '1')
+                    options.push(optionArray);              
+
                 }
-                //await updateItemCode(db, options['ItemCode'], 1, wocommerce_id);
+                
+                let checkItemCode = await getPostMetabykey(db, optionArray['ItemCode'], wocommerce_id);
+ 
+                console.log(checkItemCode.length)
+ 
+                if(checkItemCode.length == 0){
+                    optionArray['ItemCode'] = 'MOOTSH-WC';
+                    var abc = await insertItemCode(db, wocommerce_id, optionArray['ItemCode'], optionArray['Quantity'] );
+                    console.log(abc);
+                }else{
+                    optionArray['ItemCode'] = 'MOOTSH-WC';
+                    var cde = await updateItemCode(db, optionArray['ItemCode'], 1, wocommerce_id );
+                    console.log(cde);
+                }
             }                
 
             let po_order_id = 'PO' + wocommerce_id;
@@ -535,6 +578,12 @@ module.exports.handler = async(event, context) => {
                 };
                 //console.log(items);
                console.log(JSON.stringify(payload));
+
+                if(payload) {
+                    let finalOutPut = await updateStatusAfterLab(db, po_order_id, wocommerce_id, 4);
+                    console.log(finalOutPut);
+            
+                }
 
         }
 

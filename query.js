@@ -95,6 +95,13 @@ async function getPostMeta(db, wocommerce_id) {
 
 }
 
+async function getPostMetabykey(db, meta_key, wocommerce_id) {
+    let query = `SELECT * from wp_postmeta where meta_key = '${meta_key}' and post_id = ${wocommerce_id}`
+    let result = db.Query(query);
+    return result;
+
+}
+
 async function getPostStatus(db, wocommerce_id) {
     let query = `SELECT post_status from wp_posts where ID = ${wocommerce_id}`
     let result = db.Query(query);
@@ -117,14 +124,21 @@ async function insertRecWelCardRecord(db, user_id, status) {
 }
 
 async function updateStatusAfterLab(db, photo_lab_order_id, order_id, status) {
-    let query = `UPDATE print_orders set order_status = ${status}, photo_lab_order_id = ${photo_lab_order_id} WHERE order_id = ${order_id}`
+    let query = `UPDATE print_orders set order_status = ${status}, photo_lab_order_id = '${photo_lab_order_id}' WHERE woocommerce_order = ${order_id}`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function insertItemCode(db, wocommerce_id, item_code, item_code_val) {
+    let query = `INSERT INTO wp_postmeta(post_id, meta_key, meta_value) VALUES (${wocommerce_id}, '${item_code}', ${item_code_val})`
     let result = db.Query(query);
     return result;
 
 }
 
 async function updateItemCode(db, item_code, itemCodeVal, wocommerce_id) {
-    let query = `UPDATE wp_postmeta set meta_key = '${item_code}', meta_value = '${itemCodeVal}' WHERE post_id = ${wocommerce_id}`
+    let query = `UPDATE wp_postmeta set meta_value = '${itemCodeVal}' WHERE post_id = ${wocommerce_id} and meta_key = '${item_code}'`
     let result = db.Query(query);
     return result;
 
@@ -135,10 +149,12 @@ module.exports = {
     getReceWelcomeCardInfo,
     getPostMetaInfo,
     getPostMeta,
+    getPostMetabykey,
     getPostStatus,
     getOrderPhotos,
     insertRecWelCardRecord,
     updateStatusAfterLab,
+    insertItemCode,
     updateItemCode,
     DbConnection
 };
