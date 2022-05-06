@@ -67,6 +67,8 @@ var DbConnection = function() {
     }
 }
 
+//quaries
+
 async function getOrdersfromPo(db, status) {
     let query = `SELECT * from print_orders where order_status = ${status} ORDER BY RAND() LIMIT 1`
     let result = db.Query(query);
