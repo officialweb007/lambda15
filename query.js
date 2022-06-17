@@ -69,94 +69,46 @@ var DbConnection = function() {
 
 //quaries
 
-async function getOrdersfromPo(db, status) {
-    let query = `SELECT * from print_orders where order_status = ${status} ORDER BY RAND() LIMIT 1`
+async function getSubscriptions(db) {
+    let query = `SELECT * FROM wp_posts WHERE post_type = 'shop_subscription' AND post_status = 'wc-pending-cancel'`;
     let result = db.Query(query);
     return result;
 
 }
 
-async function getReceWelcomeCardInfo(db, user_id) {
-    let query = `SELECT * FROM wp_usermeta where meta_key = 'received_welcome_card' and user_id = ${user_id}`
+async function getSubscriptionMetaInfo(db, subscriptionId, meta_key) {
+    let query = `SELECT meta_value FROM wp_postmeta WHERE post_id = ${subscriptionId} AND meta_key = '${meta_key}'`;
     let result = db.Query(query);
     return result;
 
 }
 
-async function getPostMetaInfo(db, meta_key, wocommerce_id) {
-    let query = `SELECT * from wp_postmeta where meta_key = '${meta_key}' and post_id = ${wocommerce_id}`
+async function getSubscriptionMeta(db, subscriptionId) {
+    let query = `SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = ${subscriptionId}`;
     let result = db.Query(query);
     return result;
 
 }
 
-async function getPostMeta(db, wocommerce_id) {
-    let query = `SELECT * from wp_postmeta where post_id = ${wocommerce_id}`
+async function getUserMetaInfo(db, user_id, meta_key) {
+    let query = `SELECT meta_value FROM wp_usermeta WHERE user_id = ${user_id} AND meta_key = '${meta_key}'`;
     let result = db.Query(query);
     return result;
 
 }
 
-async function getPostMetabykey(db, meta_key, wocommerce_id) {
-    let query = `SELECT * from wp_postmeta where meta_key = '${meta_key}' and post_id = ${wocommerce_id}`
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function getPostStatus(db, wocommerce_id) {
-    let query = `SELECT post_status from wp_posts where ID = ${wocommerce_id}`
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function getOrderPhotos(db, order_id) {
-    let query = `SELECT * from order_photos where order_id = ${order_id}`
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function insertRecWelCardRecord(db, user_id, status) {
-    let query = `INSERT INTO wp_usermeta ('user_id', 'meta_key', 'meta_value') VALUES (${user_id}, 'received_welcome_card', ${status})`
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function updateStatusAfterLab(db, photo_lab_order_id, order_id, status) {
-    let query = `UPDATE print_orders set order_status = ${status}, photo_lab_order_id = '${photo_lab_order_id}' WHERE woocommerce_order = ${order_id}`
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function insertItemCode(db, wocommerce_id, item_code, item_code_val) {
-    let query = `INSERT INTO wp_postmeta(post_id, meta_key, meta_value) VALUES (${wocommerce_id}, '${item_code}', ${item_code_val})`
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function updateItemCode(db, item_code, itemCodeVal, wocommerce_id) {
-    let query = `UPDATE wp_postmeta set meta_value = '${itemCodeVal}' WHERE post_id = ${wocommerce_id} and meta_key = '${item_code}'`
+async function updateUserMetaInfo(db, user_id, meta_key, meta_value) {
+    let query = `UPDATE wp_usermeta set meta_value = '${meta_value}' WHERE user_id = ${user_id} and meta_key = '${meta_key}'`
     let result = db.Query(query);
     return result;
 
 }
 
 module.exports = {
-    getOrdersfromPo,
-    getReceWelcomeCardInfo,
-    getPostMetaInfo,
-    getPostMeta,
-    getPostMetabykey,
-    getPostStatus,
-    getOrderPhotos,
-    insertRecWelCardRecord,
-    updateStatusAfterLab,
-    insertItemCode,
-    updateItemCode,
+    getSubscriptions,
+    getSubscriptionMetaInfo,
+    getSubscriptionMeta,
+    getUserMetaInfo,
+    updateUserMetaInfo,
     DbConnection
 };

@@ -9,12 +9,10 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "aws-sdk": "^2.1030.0",
-        "jimp": "^0.16.1",
-        "serverless-mysql": "^1.5.4",
-        "sharp": "^0.29.3"
-    },
-    "devDependencies": {
-        "dotenv": "^16.0.0"
+        "dotenv": "^16.0.0",
+        "moment": "^2.29.3",
+        "nodemailer": "^6.7.5",
+        "nodemailer-mandrill-transport": "^1.2.0",
+        "serverless-mysql": "^1.5.4"
     }
 }
