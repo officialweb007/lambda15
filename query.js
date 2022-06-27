@@ -97,6 +97,13 @@ async function getUserMetaInfo(db, user_id, meta_key) {
 
 }
 
+async function checkGiftUser(db, subscriptionId) {
+    let query = `SELECT * FROM wp_woocommerce_order_items WHERE order_id = ${subscriptionId} AND order_item_name IN ('vz0rf3f0nr6n9jubwy', 'p0dx^d&02bxwyn!syd')`;
+    let result = db.Query(query);
+    return result;
+
+}
+
 async function updateUserMetaInfo(db, user_id, meta_key, meta_value) {
     let query = `UPDATE wp_usermeta set meta_value = '${meta_value}' WHERE user_id = ${user_id} and meta_key = '${meta_key}'`
     let result = db.Query(query);
@@ -110,5 +117,6 @@ module.exports = {
     getSubscriptionMeta,
     getUserMetaInfo,
     updateUserMetaInfo,
+    checkGiftUser,
     DbConnection
 };

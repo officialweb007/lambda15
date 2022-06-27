@@ -1,4 +1,4 @@
-const { DbConnection, getSubscriptions, getUserMetaInfo, updateUserMetaInfo, getSubscriptionMeta, getSubscriptionMetaInfo } = require("./query");
+const { DbConnection, getSubscriptions, getUserMetaInfo, updateUserMetaInfo, getSubscriptionMeta, checkGiftUser, getSubscriptionMetaInfo } = require("./query");
 const moment = require('moment');
 require("dotenv").config();
 module.exports.handler = async (event, context) => {
@@ -9,10 +9,11 @@ module.exports.handler = async (event, context) => {
 
         rows = await getSubscriptions(db);
 
-        // console.log(rows);
-
         const moment = require('moment');
         var nodemailer = require("nodemailer");
+        var fs = require("fs");
+        var path = require("path");
+        var ejs = require("ejs");
         var mandrillTransport = require('nodemailer-mandrill-transport');
 
         var smtpTransport = nodemailer.createTransport(mandrillTransport({
@@ -20,14 +21,13 @@ module.exports.handler = async (event, context) => {
               apiKey : process.env.MANDRILL_KEY
             }
         }));
+       
         
         for (let index in rows) {
 
             subscription = rows[index];
 
             let subscriptionId = subscription['ID'];
-
-            console.log(subscriptionId);
 
             let subscriptionEnd1 = await getSubscriptionMetaInfo(db, subscriptionId, '_schedule_end')
             let userIdMeta = await getSubscriptionMetaInfo(db, subscriptionId, '_customer_user')
@@ -51,29 +51,62 @@ module.exports.handler = async (event, context) => {
                 userFName = userFirstName.meta_value;
             });
 
+            let printCreditsMeta = await getUserMetaInfo(db, userId, '_user_credits');
+            let orderCreditsMeta = await getUserMetaInfo(db, userId, 'order_credits');
+
+            printCreditsMeta.forEach(function (printCreditsMetaInfo) {  
+                printCredits = printCreditsMetaInfo.meta_value;
+            });
+            orderCreditsMeta.forEach(function (orderCreditsMetaInfo) {  
+                orderCredits = orderCreditsMetaInfo.meta_value;
+            });
+
                 date1 = moment();
                 date2 = moment(subscriptionEndDate);
 
                 console.log(date1);
                 console.log(date2);
+                console.log(printCredits);
 
                 dayDiff = date2.diff(date1, 'days');
                 minutesDiff = date2.diff(date1, 'minutes');
                 console.log('day difference ' + dayDiff);
                 console.log('minutes difference ' + minutesDiff);
                 console.log(subscriptionEndDate);   
-                let subscriptionEndDateFormat = moment(subscriptionEndDate).format('MM/DD/YYYY');
+                subscriptionEndDateFormat = moment(subscriptionEndDate).format('MM/DD/YYYY');
 
-                if(dayDiff == 60){
+                let couponUsed = await checkGiftUser(db, subscriptionId);
+
+                if(couponUsed.length > 0){
+                    giftUser = true;
+                }else{
+                    giftUser = false;
+                }
+
+                if(dayDiff == 60 && printCredits > 0){
                     
+                    if(giftUser == true){
+                        var emailTemp = fs.readFileSync(path.resolve("./templates/giftuser_cancellation_email_template_60D.html"), "utf8");
+                        var emailHtml = ejs.render(emailTemp, options);
+                        var subject = "Your Mootsh gift membership expired: A chance to begin again";
+                    }else{
+                        var emailTemp = fs.readFileSync(path.resolve("./templates/cancellation_email_template_60D.html"), "utf8");
+                        var emailHtml = ejs.render(emailTemp, options);
+                        var subject = "You have " + dayDiff + " days to use any remaining Mootsh credits";
+                    }    
 
-                    let message = "<table align='center' border='0' cellpadding='0' cellspacing='0' class='row row-2' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt;' width='100%'><tbody><tr align='center'><td><img src='https://mootsh.com/wp-content/uploads/2019/03/mootsh-photos-logo.png' width='275px' style='display:block;height:auto;border:0;width:193px;max-width:100%' /></td></tr><tr><td><table align='center' border='0' cellpadding='0' cellspacing='0' class='row-content stack' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; width: 550px;' width='550'><tbody><tr><td class='column column-1' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top; padding-top: 5px; padding-bottom: 5px; border-top: 0px; border-right: 0px; border-bottom: 0px; border-left: 0px;' width='100%'><table border='0' cellpadding='0' cellspacing='0' class='text_block' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;' width='100%'><tr><td style='padding-bottom:20px;padding-left:25px;padding-right:25px;padding-top:20px;'><div style='font-family: Arial, sans-serif'><div style='font-size: 14px; mso-line-height-alt: 25.2px; color: #222222; line-height: 1.8; font-family: Helvetica Neue, Helvetica, Arial, sans-serif;'><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Dear " + userFName + ",</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>We’re writing to confirm that your Mootsh membership has been canceled. We hope you enjoyed your experience and are sorry to see you go. </span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'><strong>Your account will remain active until " + subscriptionEndDateFormat + "</strong>. Please make sure to use any remaining order and print credits before that date.</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>If this is a mistake or if you need any assistance accessing your account or using your credit balance please reach out to us at <a href='mailto:info@mootsh.com' style='color: #0068A5;'>info@mootsh.com</a> and we will be happy to assist.</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Warmly,</span></p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Team Mootsh</span></p></div></div></td></tr><tr align='center'><td><img src='https://mootsh.com/wp-content/uploads/2022/06/petites-fleurs-mootsh.png' width='275px' style='display:block;height:auto;border:0;width:193px;max-width:100%' /></td></tr></table></td></tr></tbody></table></td></tr></tbody></table>";
-                
+                    var options = {
+                        userFName: userFName,
+                        subscriptionEndDateFormat: subscriptionEndDateFormat,
+                        orderCredits: orderCredits,
+                        printCredits: printCredits
+                    };
+
                     let mailOptions={
                         from : "Mootsh <" + process.env.ADMIN_EMAIL + ">",
                         to : userEmailAdd,
-                        subject : "Reminder " + dayDiff + " Days Before Cancellation of Mootsh Membership",
-                        html : message
+                        subject : subject,
+                        html : emailHtml
                      };
                      
                      // Sending email.
@@ -84,15 +117,30 @@ module.exports.handler = async (event, context) => {
                        console.log("Message sent: " + JSON.stringify(response));
                      });
                 
-                }else if(dayDiff == 30){
+                }else if(dayDiff == 30 && printCredits > 0){
                 
-                   let message = "<table align='center' border='0' cellpadding='0' cellspacing='0' class='row row-2' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt;' width='100%'><tbody><tr align='center'><td><img src='https://mootsh.com/wp-content/uploads/2019/03/mootsh-photos-logo.png' width='275px' style='display:block;height:auto;border:0;width:193px;max-width:100%' /></td></tr><tr><td><table align='center' border='0' cellpadding='0' cellspacing='0' class='row-content stack' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; width: 550px;' width='550'><tbody><tr><td class='column column-1' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top; padding-top: 5px; padding-bottom: 5px; border-top: 0px; border-right: 0px; border-bottom: 0px; border-left: 0px;' width='100%'><table border='0' cellpadding='0' cellspacing='0' class='text_block' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;' width='100%'><tr><td style='padding-bottom:20px;padding-left:25px;padding-right:25px;padding-top:20px;'><div style='font-family: Arial, sans-serif'><div style='font-size: 14px; mso-line-height-alt: 25.2px; color: #222222; line-height: 1.8; font-family: Helvetica Neue, Helvetica, Arial, sans-serif;'><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Dear " + userFName + ",</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>We’re writing to confirm that your Mootsh membership has been canceled. We hope you enjoyed your experience and are sorry to see you go. </span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'><strong>Your account will remain active until " + subscriptionEndDateFormat + "</strong>. Please make sure to use any remaining order and print credits before that date.</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>If this is a mistake or if you need any assistance accessing your account or using your credit balance please reach out to us at <a href='mailto:info@mootsh.com' style='color: #0068A5;'>info@mootsh.com</a> and we will be happy to assist.</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Warmly,</span></p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Team Mootsh</span></p></div></div></td></tr><tr align='center'><td><img src='https://mootsh.com/wp-content/uploads/2022/06/petites-fleurs-mootsh.png' width='275px' style='display:block;height:auto;border:0;width:193px;max-width:100%' /></td></tr></table></td></tr></tbody></table></td></tr></tbody></table>";
-                
+                    if(giftUser == true){
+                        var emailTemp = fs.readFileSync(path.resolve("./templates/giftuser_cancellation_email_template_30D.html"), "utf8");
+                        var emailHtml = ejs.render(emailTemp, options);
+                        var subject = "You have credits in your Mootsh account";
+                    }else{
+                        var emailTemp = fs.readFileSync(path.resolve("./templates/cancellation_email_template_30D.html"), "utf8");
+                        var emailHtml = ejs.render(emailTemp, options);
+                        var subject = "You have " + dayDiff + " days to use any remaining Mootsh credits";
+                    }   
+
+                    var options = {
+                        userFName: userFName,
+                        subscriptionEndDateFormat: subscriptionEndDateFormat,
+                        orderCredits: orderCredits,
+                        printCredits: printCredits
+                    };
+                    
                     let mailOptions={
                         from : "Mootsh <" + process.env.ADMIN_EMAIL + ">",
                         to : userEmailAdd,
-                        subject : "Reminder " + dayDiff + " Days Before Cancellation of Mootsh Membership",
-                        html : message
+                        subject : subject,
+                        html : emailHtml
                      };
                      
                      // Sending email.
@@ -103,15 +151,30 @@ module.exports.handler = async (event, context) => {
                        console.log("Message sent: " + JSON.stringify(response));
                      });
                 
-                }else if(dayDiff == 7){
+                }else if(dayDiff == 7 && printCredits > 0){
                     
-                    let message = "<table align='center' border='0' cellpadding='0' cellspacing='0' class='row row-2' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt;' width='100%'><tbody><tr align='center'><td><img src='https://mootsh.com/wp-content/uploads/2019/03/mootsh-photos-logo.png' width='275px' style='display:block;height:auto;border:0;width:193px;max-width:100%' /></td></tr><tr><td><table align='center' border='0' cellpadding='0' cellspacing='0' class='row-content stack' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #000000; width: 550px;' width='550'><tbody><tr><td class='column column-1' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; font-weight: 400; text-align: left; vertical-align: top; padding-top: 5px; padding-bottom: 5px; border-top: 0px; border-right: 0px; border-bottom: 0px; border-left: 0px;' width='100%'><table border='0' cellpadding='0' cellspacing='0' class='text_block' role='presentation' style='mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;' width='100%'><tr><td style='padding-bottom:20px;padding-left:25px;padding-right:25px;padding-top:20px;'><div style='font-family: Arial, sans-serif'><div style='font-size: 14px; mso-line-height-alt: 25.2px; color: #222222; line-height: 1.8; font-family: Helvetica Neue, Helvetica, Arial, sans-serif;'><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Dear " + userFName + ",</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>We’re writing to confirm that your Mootsh membership has been canceled. We hope you enjoyed your experience and are sorry to see you go. </span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'><strong>Your account will remain active until " + subscriptionEndDateFormat + "</strong>. Please make sure to use any remaining order and print credits before that date.</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>If this is a mistake or if you need any assistance accessing your account or using your credit balance please reach out to us at <a href='mailto:info@mootsh.com' style='color: #0068A5;'>info@mootsh.com</a> and we will be happy to assist.</span></p><p style='margin: 0; font-size: 15px; text-align: center; letter-spacing: normal; mso-line-height-alt: 25.2px;'> </p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Warmly,</span></p><p style='margin: 0; text-align: center; font-size: 15px; mso-line-height-alt: 27px; letter-spacing: normal;'><span style='font-size:15px;'>Team Mootsh</span></p></div></div></td></tr><tr align='center'><td><img src='https://mootsh.com/wp-content/uploads/2022/06/petites-fleurs-mootsh.png' width='275px' style='display:block;height:auto;border:0;width:193px;max-width:100%' /></td></tr></table></td></tr></tbody></table></td></tr></tbody></table>";
-                
+                    if(giftUser == true){
+                        var emailTemp = fs.readFileSync(path.resolve("./templates/giftuser_cancellation_email_template_7D.html"), "utf8");
+                        var emailHtml = ejs.render(emailTemp, options);
+                        var subject = "Our Mootsh account is deactivating soon";
+                    }else{
+                        var emailTemp = fs.readFileSync(path.resolve("./templates/cancellation_email_template_7D.html"), "utf8");
+                        var emailHtml = ejs.render(emailTemp, options);
+                        var subject = "Last reminder: Your Mootsh credits expire in " + dayDiff + " days";
+                    }   
+
+                    var options = {
+                        userFName: userFName,
+                        subscriptionEndDateFormat: subscriptionEndDateFormat,
+                        orderCredits: orderCredits,
+                        printCredits: printCredits
+                    };
+
                     let mailOptions={
                         from : "Mootsh <" + process.env.ADMIN_EMAIL + ">",
                         to : userEmailAdd,
-                        subject : "Reminder " + dayDiff + " Days Before Cancellation of Mootsh Membership",
-                        html : message
+                        subject : subject,
+                        html : emailHtml
                      };
                      
                      // Sending email.

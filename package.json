@@ -10,9 +10,13 @@
     "license": "ISC",
     "dependencies": {
         "dotenv": "^16.0.0",
+        "ejs": "^3.1.8",
+        "fs": "^0.0.1-security",
         "moment": "^2.29.3",
         "nodemailer": "^6.7.5",
         "nodemailer-mandrill-transport": "^1.2.0",
+        "path": "^0.12.7",
+        "php-unserialize": "^0.0.1",
         "serverless-mysql": "^1.5.4"
     }
 }
