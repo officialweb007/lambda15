@@ -111,6 +111,20 @@ async function updateUserMetaInfo(db, user_id, meta_key, meta_value) {
 
 }
 
+async function getPostMeta(db, subscriptionId) {
+    let query = `SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = '${subscriptionId}' AND meta_key IN ('_schedule_end', '_billing_first_name', '_customer_user', '_schedule_cancelled', '_billing_email')`
+    let result = db.Query(query);
+    return result;
+
+}
+
+async function getUserMeta(db, user_id) {
+    let query = `SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = '${user_id}' AND meta_key IN ('_user_credits', 'order_credits')`
+    let result = db.Query(query);
+    return result;
+
+}
+
 module.exports = {
     getSubscriptions,
     getSubscriptionMetaInfo,
@@ -118,5 +132,7 @@ module.exports = {
     getUserMetaInfo,
     updateUserMetaInfo,
     checkGiftUser,
+    getPostMeta,
+    getUserMeta,
     DbConnection
 };

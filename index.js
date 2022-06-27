@@ -1,4 +1,4 @@
-const { DbConnection, getSubscriptions, getUserMetaInfo, updateUserMetaInfo, getSubscriptionMeta, checkGiftUser, getSubscriptionMetaInfo } = require("./query");
+const { DbConnection, getSubscriptions, getUserMetaInfo, updateUserMetaInfo, getPostMeta, getUserMeta, getSubscriptionMeta, checkGiftUser, getSubscriptionMetaInfo } = require("./query");
 const moment = require('moment');
 require("dotenv").config();
 module.exports.handler = async (event, context) => {
@@ -22,56 +22,46 @@ module.exports.handler = async (event, context) => {
             }
         }));
        
-        
+        let subscriptionMetaInfo = [], userMetaInfo = [];
         for (let index in rows) {
 
             subscription = rows[index];
-
             let subscriptionId = subscription['ID'];
+            let postMeta = await getPostMeta(db, subscriptionId);
 
-            let subscriptionEnd1 = await getSubscriptionMetaInfo(db, subscriptionId, '_schedule_end')
-            let userIdMeta = await getSubscriptionMetaInfo(db, subscriptionId, '_customer_user')
-            let subscriptionMetaCanc = await getSubscriptionMetaInfo(db, subscriptionId, '_schedule_cancelled')
-            let userEmailMeta = await getSubscriptionMetaInfo(db, subscriptionId, '_billing_email')
-            let userFirstNameMeta = await getSubscriptionMetaInfo(db, subscriptionId, '_billing_first_name')
+            postMeta.forEach(function (postMetaInfo){
+                var key = postMetaInfo.meta_key;
+                var value = postMetaInfo.meta_value;
+                subscriptionMetaInfo[key] = value;
+            });
+           
+           userId = subscriptionMetaInfo['_customer_user'];
+           subscriptionEndDate = subscriptionMetaInfo['_schedule_end'];
+           subscriptionCancelDate = subscriptionMetaInfo['_schedule_cancelled'];
+           userEmailAdd = subscriptionMetaInfo['_billing_email'];
+           userFName = subscriptionMetaInfo['_billing_first_name'];
 
-            userIdMeta.forEach(function (userMeta) {  
-                userId = userMeta.meta_value;
-            });
-            userEmailMeta.forEach(function (userEmail) {  
-                userEmailAdd = userEmail.meta_value;
-            });
-            subscriptionEnd1.forEach(function (subscriptionEnd) {  
-                subscriptionEndDate = subscriptionEnd.meta_value;
-            });
-            subscriptionMetaCanc.forEach(function (cancelledDate) {  
-                subscriptionCancelDate = cancelledDate.meta_value;
-            });
-            userFirstNameMeta.forEach(function (userFirstName) {  
-                userFName = userFirstName.meta_value;
-            });
+           let userMeta = await getUserMeta(db, userId)
+           userMeta.forEach(function (userMetaInfofields){
+               var userKey = userMetaInfofields.meta_key;
+               var userValue = userMetaInfofields.meta_value;
+               userMetaInfo[userKey] = userValue;
+           });
 
-            let printCreditsMeta = await getUserMetaInfo(db, userId, '_user_credits');
-            let orderCreditsMeta = await getUserMetaInfo(db, userId, 'order_credits');
-
-            printCreditsMeta.forEach(function (printCreditsMetaInfo) {  
-                printCredits = printCreditsMetaInfo.meta_value;
-            });
-            orderCreditsMeta.forEach(function (orderCreditsMetaInfo) {  
-                orderCredits = orderCreditsMetaInfo.meta_value;
-            });
+           printCredits = userMetaInfo['_user_credits'];
+           orderCredits = userMetaInfo['order_credits']
 
                 date1 = moment();
                 date2 = moment(subscriptionEndDate);
 
-                console.log(date1);
-                console.log(date2);
-                console.log(printCredits);
+                // console.log(date1);
+                // console.log(date2);
+                // console.log(printCredits);
 
                 dayDiff = date2.diff(date1, 'days');
                 minutesDiff = date2.diff(date1, 'minutes');
-                console.log('day difference ' + dayDiff);
-                console.log('minutes difference ' + minutesDiff);
+                // console.log('day difference ' + dayDiff);
+                // console.log('minutes difference ' + minutesDiff);
                 console.log(subscriptionEndDate);   
                 subscriptionEndDateFormat = moment(subscriptionEndDate).format('MM/DD/YYYY');
 
