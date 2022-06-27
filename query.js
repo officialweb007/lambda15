@@ -69,54 +69,38 @@ var DbConnection = function() {
 
 //quaries
 
-async function getSubscriptions(db) {
-    let query = `SELECT * FROM wp_posts WHERE post_type = 'shop_subscription' AND post_status = 'wc-pending-cancel'`;
+async function getSubscriptionPending(db, status, shop_subscription) {
+    let query = `SELECT * from wp_posts where post_status = '${status}' AND post_type = '${shop_subscription}'`
     let result = db.Query(query);
     return result;
 
 }
 
 async function getSubscriptionMetaInfo(db, subscriptionId, meta_key) {
-    let query = `SELECT meta_value FROM wp_postmeta WHERE post_id = ${subscriptionId} AND meta_key = '${meta_key}'`;
+    let query = `SELECT meta_value from wp_postmeta where post_id = ${subscriptionId} AND meta_key = '${meta_key}'`
     let result = db.Query(query);
     return result;
 
 }
 
-async function getSubscriptionMeta(db, subscriptionId) {
-    let query = `SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = ${subscriptionId}`;
+async function updateSubscriptionStatus(db, subscriptionId, post_status) {
+    let query = `UPDATE wp_posts set post_status = '${post_status}' WHERE ID = ${subscriptionId}`
     let result = db.Query(query);
     return result;
 
 }
 
-async function getUserMetaInfo(db, user_id, meta_key) {
-    let query = `SELECT meta_value FROM wp_usermeta WHERE user_id = ${user_id} AND meta_key = '${meta_key}'`;
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function checkGiftUser(db, subscriptionId) {
-    let query = `SELECT * FROM wp_woocommerce_order_items WHERE order_id = ${subscriptionId} AND order_item_name IN ('vz0rf3f0nr6n9jubwy', 'p0dx^d&02bxwyn!syd')`;
-    let result = db.Query(query);
-    return result;
-
-}
-
-async function updateUserMetaInfo(db, user_id, meta_key, meta_value) {
-    let query = `UPDATE wp_usermeta set meta_value = '${meta_value}' WHERE user_id = ${user_id} and meta_key = '${meta_key}'`
+async function updateSubscriptionEndDate(db, subscriptionId, meta_key, meta_value) {
+    let query = `UPDATE wp_postmeta set meta_value = '${meta_value}' WHERE post_id = ${subscriptionId} AND meta_key = '${meta_key}'`
     let result = db.Query(query);
     return result;
 
 }
 
 module.exports = {
-    getSubscriptions,
+    getSubscriptionPending,
     getSubscriptionMetaInfo,
-    getSubscriptionMeta,
-    getUserMetaInfo,
-    updateUserMetaInfo,
-    checkGiftUser,
+    updateSubscriptionStatus,
+    updateSubscriptionEndDate,
     DbConnection
 };
